@@ -1,5 +1,6 @@
 package com.example.travis.sunshine.app;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -69,7 +71,7 @@ public class ForecastFragment extends Fragment {
         // it must be converted to milliseconds in order to be converted to valid date.
         Date date = new Date(time * 1000);
         SimpleDateFormat format = new SimpleDateFormat("E, MMM d");
-        return format.format(date).toString();
+        return format.format(date);
     }
 
     /**
@@ -80,8 +82,7 @@ public class ForecastFragment extends Fragment {
         long roundedHigh = Math.round(high);
         long roundedLow = Math.round(low);
 
-        String highLowStr = roundedHigh + "/" + roundedLow;
-        return highLowStr;
+        return roundedHigh + "/" + roundedLow;
     }
 
     /**
@@ -144,7 +145,7 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
 
         // Dummy data for my list view.
-        ArrayList<String> weekForecast = new ArrayList<String>();
+        final ArrayList<String> weekForecast = new ArrayList<String>();
         weekForecast.add("Today -- Sunny -- 88 / 63");
         weekForecast.add("Tomorrow -- Foggy -- 70 / 46");
         weekForecast.add("Weds -- Cloudy -- 72 / 63");
@@ -168,6 +169,14 @@ public class ForecastFragment extends Fragment {
 
         ListView forecastView = (ListView)rootView.findViewById(R.id.listview_forecast);
         forecastView.setAdapter(mForecastAdapter);
+        forecastView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent detailIntent = new Intent(getActivity(), DetailActivity.class);
+                detailIntent.putExtra(Intent.EXTRA_TEXT, weekForecast.get(i));
+                getActivity().startActivity(detailIntent);
+            }
+        });
 
         return rootView;
     }
