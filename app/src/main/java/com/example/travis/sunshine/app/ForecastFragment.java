@@ -1,9 +1,11 @@
 package com.example.travis.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -36,6 +38,7 @@ import java.util.Date;
 public class ForecastFragment extends Fragment {
 
     private ArrayAdapter<String> mForecastAdapter;
+    private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
     public ForecastFragment() {
     }
@@ -51,12 +54,26 @@ public class ForecastFragment extends Fragment {
         inflater.inflate(R.menu.forecastfragment, menu);
     }
 
+    public void updateWeather(){
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = sharedPrefs.getString(getString(R.string.pref_location_key),
+                getString(R.string.pref_location_default));
+
+        weatherTask.execute(location);
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        updateWeather();
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_refresh) {
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("94061");
+            updateWeather();
             return true;
         }
 
@@ -79,6 +96,12 @@ public class ForecastFragment extends Fragment {
      */
     private String formatHighLows(double high, double low) {
         // For presentation, assume the user doesn't care about tenths of a degree.
+        if (isImperial()){
+            // Log.v(LOG_TAG, "Converting to Imperial.");
+            high = convertToImperial(high);
+            low = convertToImperial(low);
+        }
+
         long roundedHigh = Math.round(high);
         long roundedLow = Math.round(low);
 
@@ -92,6 +115,19 @@ public class ForecastFragment extends Fragment {
      * Fortunately parsing is easy:  constructor takes the JSON string and converts it
      * into an Object hierarchy for us.
      */
+
+    private Boolean isImperial(){
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String units = sharedPrefs.getString(getString(R.string.pref_units_key),
+                getString(R.string.pref_units_default));
+        // Log.v(LOG_TAG, units);
+        return ! units.equals(getString(R.string.value_metric));
+    }
+
+    private Double convertToImperial(Double metric){
+        return metric * (9.0/5.0) + 32;
+    }
+
     private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays)
             throws JSONException {
 
@@ -144,15 +180,6 @@ public class ForecastFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        // Dummy data for my list view.
-        final ArrayList<String> weekForecast = new ArrayList<String>();
-        weekForecast.add("Today -- Sunny -- 88 / 63");
-        weekForecast.add("Tomorrow -- Foggy -- 70 / 46");
-        weekForecast.add("Weds -- Cloudy -- 72 / 63");
-        weekForecast.add("Thurs -- Rainy -- 64 / 51");
-        weekForecast.add("Fri -- Foggy -- 70 / 46");
-        weekForecast.add("Sat -- Sunny -- 76 / 68");
-
         mForecastAdapter =
                 new ArrayAdapter<String>(
                         // The current context (this fragment's parent activity)
@@ -162,7 +189,7 @@ public class ForecastFragment extends Fragment {
                         // ID of the textview to populate
                         R.id.list_item_forecast_textview,
                         // Forecast data
-                        weekForecast
+                        new ArrayList<String>()
                 );
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
@@ -172,8 +199,10 @@ public class ForecastFragment extends Fragment {
         forecastView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+                String forecast = mForecastAdapter.getItem(i);
                 Intent detailIntent = new Intent(getActivity(), DetailActivity.class);
-                detailIntent.putExtra(Intent.EXTRA_TEXT, weekForecast.get(i));
+                detailIntent.putExtra(Intent.EXTRA_TEXT, forecast);
                 getActivity().startActivity(detailIntent);
             }
         });
@@ -196,6 +225,8 @@ public class ForecastFragment extends Fragment {
 
         @Override
         protected String[] doInBackground(String... zipCodes){
+
+            Log.v(LOG_TAG, "Forecast ZIP Code: " + zipCodes[0]);
 
             if (zipCodes.length == 0){
                 return null;
