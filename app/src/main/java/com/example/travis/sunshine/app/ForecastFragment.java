@@ -37,8 +37,8 @@ import java.util.Date;
  */
 public class ForecastFragment extends Fragment {
 
-    private ArrayAdapter<String> mForecastAdapter;
     private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
+    private ArrayAdapter<String> mForecastAdapter;
 
     public ForecastFragment() {
     }
@@ -56,10 +56,7 @@ public class ForecastFragment extends Fragment {
 
     public void updateWeather(){
         FetchWeatherTask weatherTask = new FetchWeatherTask();
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String location = sharedPrefs.getString(getString(R.string.pref_location_key),
-                getString(R.string.pref_location_default));
-
+        String location = ((MainActivity) getActivity()).getLocationPref();
         weatherTask.execute(location);
     }
 
@@ -76,7 +73,6 @@ public class ForecastFragment extends Fragment {
             updateWeather();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -226,7 +222,7 @@ public class ForecastFragment extends Fragment {
         @Override
         protected String[] doInBackground(String... zipCodes){
 
-            Log.v(LOG_TAG, "Forecast ZIP Code: " + zipCodes[0]);
+            //Log.v(LOG_TAG, "Forecast ZIP Code: " + zipCodes[0]);
 
             if (zipCodes.length == 0){
                 return null;
